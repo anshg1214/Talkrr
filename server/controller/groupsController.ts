@@ -1,21 +1,28 @@
 import { validationResult } from 'express-validator';
 
-import Group from '../models/group';
+import { prisma } from '../index';
 
 const fetchGroups = async (req: any, res: any, next: any) => {
 	let group: any;
 
 	try {
-		group = await Group.find().populate('members');
+		group = await prisma.group.findMany();
 	} catch (err) {
 		return res.json({
 			msg: 'Could not find group',
 			status: false
 		});
 	}
+	if (!group) {
+		return res.json({
+			msg: 'No group found',
+			status: false
+		});
+	}
 
 	return res.json({
-		'Groups Fetched Successfully': group
+		msg: 'Groups Fetched Successfully',
+		group
 	});
 };
 
@@ -24,16 +31,31 @@ const fetchGroupData = async (req: any, res: any, next: any) => {
 	let group: any;
 
 	try {
-		group = await Group.findById(id).populate('members');
+		group = await prisma.group.findUniqueOrThrow({
+			where: {
+				id: id
+			},
+			include: {
+				messages: true,
+				users: true
+			}
+		});
 	} catch (err) {
 		return res.json({
 			msg: 'Could not find group',
 			status: false
 		});
 	}
+	if (!group) {
+		return res.json({
+			msg: 'No group found',
+			status: false
+		});
+	}
 
 	return res.json({
-		'Group Fetched Successfully': group
+		msg: 'Group Fetched Successfully',
+		group
 	});
 };
 
@@ -46,16 +68,20 @@ const createNewGroup = async (req: any, res: any, next: any) => {
 		});
 	}
 
-	const { title, description } = req.body;
-	const newGroup = new Group({
-		title,
-		description,
-		members: [],
-		messages: []
-	});
+	const { title, description, userID } = req.body;
 
 	try {
-		await newGroup.save();
+		await prisma.group.create({
+			data: {
+				name: title,
+				description: description,
+				users: {
+					connect: {
+						id: userID
+					}
+				}
+			}
+		});
 	} catch (err) {
 		return res.json({
 			msg: 'Could not create group',

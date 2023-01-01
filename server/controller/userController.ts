@@ -1,22 +1,19 @@
 import bcrypt from 'bcryptjs';
 import { AvatarGenerator } from 'random-avatar-generator';
 const generator = new AvatarGenerator();
-import User from '../models/user';
+import { prisma } from '../index';
 
 const signup = async (req: any, res: any, next: any) => {
 	try {
 		const { email, password, username } = req.body;
 		const defaultImage = generator.generateRandomAvatar();
 
-		const usernameCheck = await User.findOne({ email });
-		if (usernameCheck) {
-			return res.json({
-				msg: 'Username already exists',
-				status: false
-			});
-		}
+		const emailCheck = await prisma.user.findUnique({
+			where: {
+				email: email
+			}
+		});
 
-		const emailCheck = await User.findOne({ email });
 		if (emailCheck) {
 			return res.json({
 				msg: 'Email already exists',
@@ -24,14 +21,16 @@ const signup = async (req: any, res: any, next: any) => {
 			});
 		}
 
-		const hashedPassword = await bcrypt.hash(password, 10);
-		const user = await User.create({
-			email,
-			password: hashedPassword,
-			username,
-			image: defaultImage
+		const hashedPassword = await bcrypt.hash(password, 5);
+		const user = await prisma.user.create({
+			data: {
+				email: email,
+				password: hashedPassword,
+				name: username,
+				profileImage: defaultImage
+			}
 		});
-		delete user.password;
+		user.password = undefined;
 		res.json({ user, status: true });
 	} catch (err) {
 		next(err);
@@ -40,8 +39,15 @@ const signup = async (req: any, res: any, next: any) => {
 
 const login = async (req: any, res: any, next: any) => {
 	try {
-		const { username, password } = req.body;
-        const user = await User.findOne({ username });
+		const { email, password } = req.body;
+		const user = await prisma.user.findUnique({
+			where: {
+				email: email
+			},
+			include: {
+				groups: true
+			}
+		});
 
 		if (!user) {
 			return res.json({
@@ -51,14 +57,13 @@ const login = async (req: any, res: any, next: any) => {
 		}
 
 		const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
+		if (!isPasswordValid) {
 			return res.json({
 				msg: 'Incorrect Username or Password',
 				status: false
 			});
 		}
-
-		delete user.password;
+		user.password = undefined;
 		return res.json({ status: true, user });
 	} catch (err) {
 		next(err);
