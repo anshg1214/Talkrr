@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider        = "prisma-client-js"
+    previewFeatures = ["referentialIntegrity"]
+}
+
+datasource db {
+    provider             = "mysql"
+    url                  = env("DATABASE_URL")
+    referentialIntegrity = "prisma"
+}
+
+model User {
+    id           String    @id @default(uuid())
+    name         String
+    email        String    @unique
+    password     String
+    profileImage String?   @db.LongText
+    groups       Group[]
+    Message      Message[]
+}
+
+model Group {
+    id          String    @id @default(uuid())
+    name        String
+    description String
+    groupImage  String?   @db.LongText
+    messages    Message[]
+    users       User[]
+}
+
+model Message {
+    id       String   @id @default(uuid())
+    time     DateTime @default(now())
+    text     String   @db.LongText
+    isImage  Boolean  @default(false)
+    author   User     @relation(fields: [authorID], references: [id])
+    authorID String
+    Group    Group    @relation(fields: [groupID], references: [id])
+    groupID  String
+}
