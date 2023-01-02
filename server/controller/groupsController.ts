@@ -1,12 +1,17 @@
 import { validationResult } from 'express-validator';
 
 import { prisma } from '../index';
+import { Group } from '@prisma/client';
 
 const fetchGroups = async (req: any, res: any, next: any) => {
 	let group: any;
 
 	try {
-		group = await prisma.group.findMany();
+		group = await prisma.group.findMany({
+			include: {
+				users: true
+			}
+		});
 	} catch (err) {
 		return res.json({
 			msg: 'Could not find group',
@@ -70,8 +75,9 @@ const createNewGroup = async (req: any, res: any, next: any) => {
 
 	const { title, description, userID } = req.body;
 
+	let group: Group;
 	try {
-		await prisma.group.create({
+		group = await prisma.group.create({
 			data: {
 				name: title,
 				description: description,
@@ -80,6 +86,9 @@ const createNewGroup = async (req: any, res: any, next: any) => {
 						id: userID
 					}
 				}
+			},
+			include: {
+				users: true
 			}
 		});
 	} catch (err) {
@@ -91,7 +100,8 @@ const createNewGroup = async (req: any, res: any, next: any) => {
 
 	return res.json({
 		msg: 'Group Created Successfully',
-		status: true
+		status: true,
+		group
 	});
 };
 
