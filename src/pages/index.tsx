@@ -57,10 +57,10 @@ const Home: NextPage = () => {
 
 	const handleCreateGroup = async (name: string, description: string) => {
 		const response = await createGroup(name, description, currentUser);
-        const newGroupId = response?.data?.group?.id;
+		const newGroupId = response?.data?.group?.id;
 
-        const groups = await fetchGroups();
-        setGroups(groups);
+		const groups = await fetchGroups();
+		setGroups(groups);
 		changeGroup(groups.find((group: Group) => group.id === newGroupId));
 
 		// socket emit group created

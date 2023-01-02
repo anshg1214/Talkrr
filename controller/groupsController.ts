@@ -1,6 +1,6 @@
 import { validationResult } from 'express-validator';
 
-import { prisma } from '../index';
+import { prisma } from '../server';
 import { Group } from '@prisma/client';
 
 const fetchGroups = async (req: any, res: any, next: any) => {

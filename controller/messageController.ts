@@ -1,4 +1,4 @@
-import { prisma } from '../index';
+import { prisma } from '../server';
 
 const fetchMessages = async (req: any, res: any, next: any) => {
 	const gid = req.params.gid;
@@ -58,7 +58,7 @@ const sendMessage = async (req: any, res: any, next: any) => {
 				isImage: isImage
 			}
 		});
-	} catch (err) {
+	} catch (err: any) {
 		console.log(err.message);
 		return res.json({
 			msg: 'Could not send message',

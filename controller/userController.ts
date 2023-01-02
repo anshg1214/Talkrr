@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { AvatarGenerator } from 'random-avatar-generator';
 const generator = new AvatarGenerator();
-import { prisma } from '../index';
+import { prisma } from '../server';
 
 const signup = async (req: any, res: any, next: any) => {
 	try {
@@ -30,7 +30,7 @@ const signup = async (req: any, res: any, next: any) => {
 				profileImage: defaultImage
 			}
 		});
-		user.password = undefined;
+		user.password = '';
 		res.json({ user, status: true });
 	} catch (err) {
 		next(err);
@@ -63,7 +63,7 @@ const login = async (req: any, res: any, next: any) => {
 				status: false
 			});
 		}
-		user.password = undefined;
+		user.password = '';
 		return res.json({ status: true, user });
 	} catch (err) {
 		next(err);
