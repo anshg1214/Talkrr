@@ -5,7 +5,7 @@ import TextInput from './TextInput';
 const Modal = (props: {
 	showModal: boolean;
 	handleModalToggle: () => void;
-	createGroup: (name: string, description: string) => void;
+	createGroup: (name: string, description: string) => Promise<void>;
 }) => {
 	const showModal = props?.showModal;
 	const handleModalToggle = props?.handleModalToggle;
@@ -34,9 +34,10 @@ const Modal = (props: {
 
 	const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		console.log(title, description);
 		await createGroup(title, description);
-		// handleModalToggle();
+		setTitle('');
+		setDescription('');
+		handleModalToggle();
 	};
 
 	if (!showModal) {
@@ -44,12 +45,12 @@ const Modal = (props: {
 	}
 	return (
 		<>
-			<div className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm flex justify-center items-center">
-				<div
-					className="border border-white rounded-2xl p-20"
-					id="wrapper"
-					onClick={handleModalClose}
-				>
+			<div
+				className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm flex justify-center items-center"
+				onClick={handleModalClose}
+				id="wrapper"
+			>
+				<div className="border border-white rounded-2xl p-20">
 					<h2 className="mb-5">Create Group</h2>
 					<form onSubmit={handleFormSubmit}>
 						<TextInput

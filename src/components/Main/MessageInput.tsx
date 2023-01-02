@@ -3,7 +3,7 @@ import { InputBase, IconButton } from '@mui/material';
 import { Send } from '@mui/icons-material';
 
 type MessageInputProps = {
-	sendMessage: (message: string) => void;
+	sendMessage: (message: string) => Promise<void>;
 };
 
 const MessageInput = (props: MessageInputProps) => {
