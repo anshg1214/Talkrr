@@ -35,8 +35,11 @@ model Message {
   time     DateTime @default(now())
   text     String   @db.LongText
   isImage  Boolean  @default(false)
-  author   User     @relation(fields: [authorID], references: [id])
+  author   User     @relation(fields: [authorID], references: [id], onDelete: Cascade)
   authorID String
-  Group    Group    @relation(fields: [groupID], references: [id])
+  Group    Group    @relation(fields: [groupID], references: [id], onDelete: Cascade)
   groupID  String
+
+  @@index([authorID])
+  @@index([groupID])
 }
