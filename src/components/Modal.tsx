@@ -50,7 +50,7 @@ const Modal = (props: {
 				onClick={handleModalClose}
 				id="wrapper"
 			>
-				<div className="border border-white rounded-2xl p-20">
+				<div className="border border-white rounded-2xl p-20 bg-[#120F13]">
 					<h2 className="mb-5">Create Group</h2>
 					<form onSubmit={handleFormSubmit}>
 						<TextInput

@@ -1,6 +1,6 @@
 // import 'dotenv/config';
 
-export const host = process.env.SERVER_URL;
+export const host = process.env.SERVER_URL || 'http://localhost:4000';
 
 // const SERVER_URL = 'http://localhost:4000';
 

@@ -13,4 +13,11 @@ router.post(
 );
 router.get('/:gid', groupsController.fetchGroupData);
 
+router.post(
+	'/join',
+	body('groupID').isLength({ min: 1 }),
+	body('userID').isLength({ min: 1 }),
+	groupsController.joinGroup
+);
+
 export default router;

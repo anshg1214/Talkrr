@@ -105,4 +105,28 @@ const createNewGroup = async (req: any, res: any, next: any) => {
 	});
 };
 
-export { fetchGroups, fetchGroupData, createNewGroup };
+const joinGroup = async (req: any, res: any, next: any) => {
+	const { groupID, userID } = req.body;
+	try {
+		const group = await prisma.group.update({
+			where: {
+				id: groupID
+			},
+			data: {
+				users: {
+					connect: {
+						id: userID
+					}
+				}
+			},
+			include: {
+				users: true
+			}
+		});
+		return res.json({ status: true, group });
+	} catch (err) {
+		return res.json({ status: false, msg: 'Could not join group' });
+	}
+};
+
+export { fetchGroups, fetchGroupData, createNewGroup, joinGroup };
