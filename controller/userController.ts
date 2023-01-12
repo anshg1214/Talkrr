@@ -2,8 +2,9 @@ import bcrypt from 'bcryptjs';
 import { AvatarGenerator } from 'random-avatar-generator';
 const generator = new AvatarGenerator();
 import { prisma } from '../server';
+import { Request, Response, NextFunction } from 'express';
 
-const signup = async (req: any, res: any, next: any) => {
+const signup = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { email, password, username } = req.body;
 		const defaultImage = generator.generateRandomAvatar();
@@ -15,7 +16,7 @@ const signup = async (req: any, res: any, next: any) => {
 		});
 
 		if (emailCheck) {
-			return res.json({
+			return res.sendStatus(409).json({
 				msg: 'Email already exists',
 				status: false
 			});
@@ -30,14 +31,13 @@ const signup = async (req: any, res: any, next: any) => {
 				profileImage: defaultImage
 			}
 		});
-		user.password = '';
-		res.json({ user, status: true });
+		res.json({ status: true });
 	} catch (err) {
 		next(err);
 	}
 };
 
-const login = async (req: any, res: any, next: any) => {
+const login = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const { email, password } = req.body;
 		const user = await prisma.user.findUnique({
@@ -70,4 +70,24 @@ const login = async (req: any, res: any, next: any) => {
 	}
 };
 
-export { login, signup };
+const logout = async (req: Request, res: Response, next: NextFunction) => {
+	req.logout(err => {
+		if (err) return next(err);
+	});
+	res.json({
+		message: 'Logged out successfully.'
+	});
+};
+
+const getUserInfo = async (req: Request, res: Response, next: NextFunction) => {
+	if (req.user) {
+		const user = req.user;
+		// @ts-ignore
+		user.password = '';
+		res.json({ status: true, user: user });
+	} else {
+		res.json({ status: false });
+	}
+};
+
+export { login, logout, signup, getUserInfo };

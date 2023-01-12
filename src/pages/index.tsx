@@ -10,17 +10,20 @@ import Messages from '../components/Main/Messages';
 import MessageInput from '../components/Main/MessageInput';
 import Modal from '../components/Modal';
 import React, { useState, useEffect, useCallback } from 'react';
-// import socketIOClient from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { useRouter } from 'next/router';
 import type { User, Group, Message } from '../utils/types';
 import {
 	fetchGroups,
 	fetchMessages,
 	sendMessage,
-	createGroup
+	createGroup,
+	joinGroup,
+	getLoggedInUserInfo
 } from '../utils/common';
+import JoinGroup from '../components/Main/JoinGroup';
 
-const Home: NextPage = () => {
+const Home: NextPage = props => {
 	const router = useRouter();
 
 	const [currentUser, setCurrentUser] = useState<User>({
@@ -42,6 +45,8 @@ const Home: NextPage = () => {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [createChannelModal, setCreateChannelModal] = useState(false);
 	const [aboutChannel, setAboutChannel] = useState(false);
+	const [socket, setSocket] = useState<Socket | null>(null);
+	const [isMemberOfGroup, setIsMemberOfGroup] = useState(false);
 
 	const handleModalToggle = useCallback(() => {
 		setCreateChannelModal(!createChannelModal);
@@ -53,6 +58,7 @@ const Home: NextPage = () => {
 
 	const handleMessageSender = async (message: string) => {
 		const response = await sendMessage(message, currentUser, currentGroup);
+		socket?.emit('sendMessage', currentGroup.id);
 	};
 
 	const handleCreateGroup = async (name: string, description: string) => {
@@ -63,39 +69,72 @@ const Home: NextPage = () => {
 		setGroups(groups);
 		changeGroup(groups.find((group: Group) => group.id === newGroupId));
 
-		// socket emit group created
-		// Switch to group page
+		socket?.emit('createGroup');
 	};
-
-	// const [socket, setSocket] = useState(undefined);
 
 	const changeGroup = async (group: Group) => {
 		const groupId = group?.id;
 		const groupMessages = await fetchMessages(groupId);
 		setCurrentGroup(group);
+		socket?.emit('joinGroup', groupId, currentUser.id);
 		setMessages(groupMessages);
 		setAboutChannel(true);
 	};
 
+	async function setGroupsInState() {
+		const groups = await fetchGroups();
+		setGroups(groups);
+	}
+
+	async function setMessagesInState(id: string) {
+		const messages = await fetchMessages(id);
+		setMessages(messages);
+	}
+
+	const JoinGroupHandler = async () => {
+		const response = await joinGroup(currentGroup, currentUser);
+		if (response?.data?.status) {
+			console.log('joined group');
+            setIsMemberOfGroup(true);
+			changeGroup(currentGroup);
+		}
+	};
+
 	useEffect(() => {
 		async function checkUser() {
-			const user = localStorage.getItem('chat-app-user');
-			if (!user) {
-				router.push('/login');
+			const userResponse = await getLoggedInUserInfo();
+			if (userResponse) {
+				if (userResponse.status) {
+					setCurrentUser(userResponse.user);
+				} else {
+					router.push('/login');
+				}
 			} else {
-				setCurrentUser(JSON.parse(user));
+				router.push('/login');
 			}
 		}
 		checkUser();
 	}, [router]);
 
 	useEffect(() => {
-		async function setGroupsInState() {
-			const groups = await fetchGroups();
-			setGroups(groups);
-		}
+		const socket: Socket = io(process.env.SERVER_URL as string, {
+			transports: ['websocket']
+		});
+		socket.emit('newUser', currentUser?.id);
+		socket.on('fetchMessage', (id: string) => setMessagesInState(id));
+		socket.on('fetchGroup', setGroupsInState);
+		setSocket(socket);
 		setGroupsInState();
-	}, [router]);
+	}, [router, currentUser]);
+
+	useEffect(() => {
+		for (let i = 0; i < currentGroup.users.length; i++) {
+			if (currentGroup.users[i].id === currentUser.id) {
+				setIsMemberOfGroup(true);
+				break;
+			}
+		}
+	}, [currentGroup, currentUser]);
 
 	const SidebarContent = (props: { aboutChannel: boolean }) => {
 		const aboutChannel = props?.aboutChannel;
@@ -125,6 +164,35 @@ const Home: NextPage = () => {
 		return content;
 	};
 
+	const MainContent = (props: { inGroup: boolean }) => {
+		const inGroup = props?.inGroup;
+		let content;
+		if (inGroup) {
+			content = (
+				<div className="flex-[4] flex flex-col justify-between bg-[#252329]">
+					<MainBar groupTitle={currentGroup.name} />
+					<div className="flex-col justify-end">
+						<Messages messages={messages} />
+						<MessageInput sendMessage={handleMessageSender} />
+					</div>
+				</div>
+			);
+		} else {
+			content = (
+				<div className="flex-[4] flex flex-col bg-[#252329]">
+					<MainBar groupTitle={currentGroup.name} />
+					<div className="flex-col justify-center">
+						<JoinGroup
+							group={currentGroup}
+							joinGroupHandler={JoinGroupHandler}
+						/>
+					</div>
+				</div>
+			);
+		}
+		return content;
+	};
+
 	return (
 		<>
 			<Modal
@@ -140,18 +208,26 @@ const Home: NextPage = () => {
 						toggleModal={handleModalToggle}
 					/>
 					<SidebarContent aboutChannel={aboutChannel} />
-					<BottomBar />
+					<BottomBar name={currentUser.name} />
 				</div>
-				<div className="flex-[4] flex flex-col justify-between bg-[#252329]">
-					<MainBar groupTitle={currentGroup.name} />
-					<div className="flex-col justify-end">
-						<Messages messages={messages} />
-						<MessageInput sendMessage={handleMessageSender} />
-					</div>
-				</div>
+				<MainContent inGroup={isMemberOfGroup} />
 			</div>
 		</>
 	);
+};
+
+Home.getInitialProps = async ({ req, res }) => {
+	let pageProps = new Map();
+
+	// @ts-ignore
+	if (req && req.session.passport) {
+		// @ts-ignore
+		pageProps.set('user', req.session.passport.user);
+	}
+	if (!pageProps.get('user')) {
+		res?.writeHead(302, { Location: '/login' }).end();
+	}
+	return { pageProps };
 };
 
 export default Home;

@@ -5,12 +5,9 @@ const router = express.Router();
 
 import * as userController from '../controller/userController';
 
-router.post(
-	'/login',
-	body('email').isEmail(),
-	body('password').isLength({ min: 6, max: 20 }),
-	userController.login
-);
+router.post('/logout', userController.logout);
+
+router.get('/me', userController.getUserInfo);
 
 router.post(
 	'/signup',

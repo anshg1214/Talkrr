@@ -6,18 +6,11 @@ import Button from '../components/Button';
 import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { loginRoute } from '../utils/APIRoutes';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-
-interface allToastOptions {
-	theme: 'colored' | 'light' | 'dark';
-	position: 'bottom-right';
-	autoClose: number;
-	pauseOnHover: boolean;
-	draggable: boolean;
-}
+import { allToastOptions } from '../utils/types';
 
 const Login: NextPage = () => {
 	const router = useRouter();
@@ -60,21 +53,32 @@ const Login: NextPage = () => {
 		event.preventDefault();
 		if (handleValidation()) {
 			const { email, password } = values;
-			const { data } = await axios.post(loginRoute, {
-				email,
-				password
-			});
 
-			if (data.status) {
-				localStorage.setItem(
-					'chat-app-user',
-					JSON.stringify(data.user)
+			try {
+				const resp = await axios.post(
+					loginRoute,
+					new URLSearchParams({
+						email,
+						password
+					})
 				);
 
 				router.push('/');
-			}
-			if (data.status === 'false') {
-				toast.error(data.message, toastOptions);
+			} catch (err) {
+				const errors = err as Error | AxiosError;
+
+				if (axios.isAxiosError(errors)) {
+					if (errors.response?.status === 401) {
+						toast.error(
+							'Incorrect Username or Password',
+							toastOptions
+						);
+					} else {
+						toast.error('Something went wrong', toastOptions);
+					}
+				} else {
+					toast.error('Something went wrong', toastOptions);
+				}
 			}
 		}
 	};

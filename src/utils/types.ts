@@ -21,4 +21,12 @@ type Message = {
 	Group: Group;
 };
 
-export type { User, Group, Message };
+interface allToastOptions {
+	theme: 'colored' | 'light' | 'dark';
+	position: 'bottom-right';
+	autoClose: number;
+	pauseOnHover: boolean;
+	draggable: boolean;
+}
+
+export type { User, Group, Message, allToastOptions };

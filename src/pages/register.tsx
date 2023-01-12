@@ -7,17 +7,10 @@ import User from '../assets/User';
 import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { registerRoute } from '../utils/APIRoutes';
 import { useRouter } from 'next/router';
-
-interface allToastOptions {
-	theme: 'colored' | 'light' | 'dark';
-	position: 'bottom-right';
-	autoClose: number;
-	pauseOnHover: boolean;
-	draggable: boolean;
-}
+import { allToastOptions } from '../utils/types';
 
 const Register: NextPage = () => {
 	const router = useRouter();
@@ -52,23 +45,37 @@ const Register: NextPage = () => {
 		event.preventDefault();
 		if (handleValidation()) {
 			const { password, email, username } = values;
-			const { data } = await axios.post(registerRoute, {
-				username,
-				email,
-				password
-			});
+			try {
+				const resp = await axios.post(registerRoute, {
+					username,
+					email,
+					password
+				});
 
-			if (data.status) {
-				localStorage.setItem(
-					'chat-app-user',
-					JSON.stringify(data.user)
+				setValues({
+					username: '',
+					email: '',
+					password: '',
+					confirmPassword: ''
+				});
+
+				toast.error(
+					'Account created successfully. You can now login.',
+					toastOptions
 				);
+			} catch (err) {
+				const errors = err as Error | AxiosError;
 
-				router.push('/');
-			}
-
-			if (data.status === 'false') {
-				toast.error(data.message, toastOptions);
+				if (axios.isAxiosError(errors)) {
+					const resp = errors.response!;
+					if (resp.status === 409) {
+						toast.error('Email already exists.', toastOptions);
+					} else {
+						toast.error('Something went wrong', toastOptions);
+					}
+				} else {
+					toast.error('Something went wrong', toastOptions);
+				}
 			}
 		}
 	};
@@ -108,7 +115,7 @@ const Register: NextPage = () => {
 				<form className="mt-5" onSubmit={handleSubmit}>
 					<TextInput
 						Icon={User}
-						name="name"
+						name="username"
 						placeHolderText="Name"
 						type="text"
 						text={values.username}

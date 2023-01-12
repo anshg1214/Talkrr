@@ -23,6 +23,11 @@ const MessageInput = (props: MessageInputProps) => {
 				placeholder="Type a message here"
 				value={message}
 				onChange={e => setMessage(e.target.value)}
+				onKeyDown={e => {
+					if (e.key === 'Enter') {
+						sendMessageHandler();
+					}
+				}}
 			/>
 			<IconButton
 				className="bg-[#2F80ED] rounded-lg p-2"
