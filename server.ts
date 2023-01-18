@@ -131,6 +131,14 @@ nextServer.prepare().then(() => {
 			}
 		});
 
+		// When being added to a group
+		socket.on('addedToGroup', (groupID: string) => {
+			const groupUsers = users.filter(user => user.groupID === groupID);
+			groupUsers.forEach(user => {
+				io.to(user.socketID).emit('fetchGroup');
+			});
+		});
+
 		// When sending a message
 		socket.on('sendMessage', (groupID: string) => {
 			const groupUsers = users.filter(user => user.groupID === groupID);

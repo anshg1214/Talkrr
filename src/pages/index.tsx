@@ -77,8 +77,22 @@ const Home: NextPage = props => {
 		const groupMessages = await fetchMessages(groupId);
 		setCurrentGroup(group);
 		socket?.emit('joinGroup', groupId, currentUser.id);
-		setMessages(groupMessages);
+		if (!checkIsMemberOfGroup(group, currentUser)) {
+			setIsMemberOfGroup(false);
+		} else {
+			setIsMemberOfGroup(true);
+			setMessages(groupMessages);
+		}
 		setAboutChannel(true);
+	};
+
+	const checkIsMemberOfGroup = (group: Group, user: User): boolean => {
+		for (let i = 0; i < group.users.length; i++) {
+			if (group.users[i].id === user.id) {
+				return true;
+			}
+		}
+		return false;
 	};
 
 	async function setGroupsInState() {
@@ -95,8 +109,9 @@ const Home: NextPage = props => {
 		const response = await joinGroup(currentGroup, currentUser);
 		if (response?.data?.status) {
 			console.log('joined group');
-            setIsMemberOfGroup(true);
-			changeGroup(currentGroup);
+			setIsMemberOfGroup(true);
+			changeGroup(response?.data?.group);
+			socket?.emit('addedToGroup', currentGroup.id);
 		}
 	};
 
@@ -126,15 +141,6 @@ const Home: NextPage = props => {
 		setSocket(socket);
 		setGroupsInState();
 	}, [router, currentUser]);
-
-	useEffect(() => {
-		for (let i = 0; i < currentGroup.users.length; i++) {
-			if (currentGroup.users[i].id === currentUser.id) {
-				setIsMemberOfGroup(true);
-				break;
-			}
-		}
-	}, [currentGroup, currentUser]);
 
 	const SidebarContent = (props: { aboutChannel: boolean }) => {
 		const aboutChannel = props?.aboutChannel;
