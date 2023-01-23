@@ -15,7 +15,7 @@ const TextInput = ({
 			) : null}
 
 			<input
-				className="p-2 w-72 text-ellipsis outline-none text-grey-custom bg-transparent"
+				className="p-2 w-72 text-ellipsis outline-none text-white bg-transparent"
 				name={name}
 				placeholder={placeHolderText}
 				type={type}
