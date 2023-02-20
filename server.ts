@@ -7,7 +7,7 @@ import next from 'next';
 import passport from 'passport';
 import session from 'express-session';
 import authenticationMiddleware from './services/authMiddleware';
-import strategy from './services/auth';
+import strategy, { findUser, isAuthenticated } from './services/auth';
 import { User } from '@prisma/client';
 
 // Prisma
@@ -59,26 +59,28 @@ nextServer.prepare().then(() => {
 	app.use(passport.initialize());
 	app.use(passport.session());
 
-	passport.serializeUser((user, done) => {
-		done(null, (user as User).id);
+	passport.serializeUser((user: any, done) => {
+		if (user['password']) {
+			delete user['password'];
+		}
+		done(null, user);
 	});
 
-	passport.deserializeUser(async (id: string, done) => {
-		const user = await prisma.user.findUnique({
-			where: {
-				id: id
-			}
-		});
-
-		if (!user) return done('No user to deserialize');
-
-		return done(null, user);
+	passport.deserializeUser((user: User, done) => {
+		findUser(user.email)
+			.then(user => {
+				if (user && user['password']) {
+					user.password = '';
+				}
+				done(null, user);
+			})
+			.catch(error => {
+				done(error);
+			});
 	});
 
-	app.post('/api/users/login', passport.authenticate('local'), (req, res) => {
-		res.json({
-			message: 'Logged in successfully.'
-		});
+	app.get('/', isAuthenticated, (req: Request, res: Response) => {
+		return handle(req, res);
 	});
 
 	app.use('/api/users', usersRoute);

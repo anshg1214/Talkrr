@@ -18,20 +18,13 @@ import {
 	fetchMessages,
 	sendMessage,
 	createGroup,
-	joinGroup,
-	getLoggedInUserInfo
+	joinGroup
 } from '../utils/common';
 import JoinGroup from '../components/Main/JoinGroup';
 
-const Home: NextPage = props => {
+const Home = (props: { user: User }) => {
 	const router = useRouter();
-
-	const [currentUser, setCurrentUser] = useState<User>({
-		id: '',
-		name: '',
-		email: '',
-		profileImage: ''
-	});
+	const { user: currentUser } = props;
 
 	const [currentGroup, setCurrentGroup] = useState<Group>({
 		id: '',
@@ -114,22 +107,6 @@ const Home: NextPage = props => {
 			socket?.emit('addedToGroup', currentGroup.id);
 		}
 	};
-
-	useEffect(() => {
-		async function checkUser() {
-			const userResponse = await getLoggedInUserInfo();
-			if (userResponse) {
-				if (userResponse.status) {
-					setCurrentUser(userResponse.user);
-				} else {
-					router.push('/login');
-				}
-			} else {
-				router.push('/login');
-			}
-		}
-		checkUser();
-	}, [router]);
 
 	useEffect(() => {
 		const socket: Socket = io(process.env.SERVER_URL as string, {
@@ -222,18 +199,15 @@ const Home: NextPage = props => {
 	);
 };
 
-Home.getInitialProps = async ({ req, res }) => {
-	let pageProps = new Map();
+export const getServerSideProps = async (props: { req: any }) => {
+	const { req } = props;
 
-	// @ts-ignore
-	if (req && req.session.passport) {
-		// @ts-ignore
-		pageProps.set('user', req.session.passport.user);
+	let user = req ? req.session?.passport?.user : null;
+	if (!user) {
+		user = null;
 	}
-	if (!pageProps.get('user')) {
-		res?.writeHead(302, { Location: '/login' }).end();
-	}
-	return { pageProps };
+
+	return { props: { user } };
 };
 
 export default Home;

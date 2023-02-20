@@ -8,6 +8,11 @@ const strategy = new LocalStrategy(
 		passwordField: 'password'
 	},
 	async (email, password, done) => {
+		if (!email || !password)
+			return done(null, false, {
+				message: 'Please enter your email and password.'
+			});
+
 		const user = await prisma.user.findUnique({
 			where: {
 				email: email
@@ -33,5 +38,20 @@ const strategy = new LocalStrategy(
 		});
 	}
 );
+
+export const findUser = async (email: string) => {
+	return prisma.user.findUnique({
+		where: {
+			email: email
+		}
+	});
+};
+
+export const isAuthenticated = (req: any, res: any, next: any) => {
+	if (req.isAuthenticated()) {
+		return next();
+	}
+	res.redirect('/login');
+};
 
 export default strategy;

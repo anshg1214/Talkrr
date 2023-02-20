@@ -38,36 +38,10 @@ const signup = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
-	try {
-		const { email, password } = req.body;
-		const user = await prisma.user.findUnique({
-			where: {
-				email: email
-			},
-			include: {
-				groups: true
-			}
-		});
-
-		if (!user) {
-			return res.json({
-				msg: 'Incorrect Username or Password',
-				status: false
-			});
-		}
-
-		const isPasswordValid = await bcrypt.compare(password, user.password);
-		if (!isPasswordValid) {
-			return res.json({
-				msg: 'Incorrect Username or Password',
-				status: false
-			});
-		}
-		user.password = '';
-		return res.json({ status: true, user });
-	} catch (err) {
-		next(err);
-	}
+	res.json({
+		user: req.user,
+		message: 'Logged in successfully.'
+	});
 };
 
 const logout = async (req: Request, res: Response, next: NextFunction) => {
