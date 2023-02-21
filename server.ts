@@ -6,7 +6,6 @@ import { Server, Socket } from 'socket.io';
 import next from 'next';
 import passport from 'passport';
 import session from 'express-session';
-import authenticationMiddleware from './services/authMiddleware';
 import strategy, { findUser, isAuthenticated } from './services/auth';
 import { User } from '@prisma/client';
 
@@ -14,6 +13,18 @@ import { User } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 export { prisma };
+
+// Redis
+import { createClient } from 'redis';
+import connectRedis from 'connect-redis';
+const redisClient = createClient({
+	url: process.env.REDIS_URL || 'redis://localhost:6379',
+	legacyMode: true
+});
+redisClient.connect().catch(error => {
+	console.log('Error connecting to Redis:', error);
+});
+const RedisStore = connectRedis(session);
 
 // Routes
 import usersRoute from './routes/userRouter';
@@ -46,7 +57,8 @@ nextServer.prepare().then(() => {
 	app.use(express.urlencoded({ extended: true }));
 	app.use(
 		session({
-			name: 'session',
+			// @ts-ignore
+			store: new RedisStore({ client: redisClient }),
 			secret: process.env.SESSION_SECRET!,
 			resave: false,
 			saveUninitialized: false,
